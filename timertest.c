@@ -29,6 +29,12 @@ macht gleiche wie Togle on compare match
 war test für die timer interrupts
 
 */
+/*
+TOD0
+establish pwm -> watch icr1
+aim for frequenzy of 90 hz
+built timebase via external crystal
+*/
 
 ISR(TIMER1_COMPA_vect) {
 	
