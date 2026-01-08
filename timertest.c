@@ -24,6 +24,11 @@ int main(void){
 	}
 	
 }
+/*
+macht gleiche wie Togle on compare match
+war test für die timer interrupts
+
+*/
 
 ISR(TIMER1_COMPA_vect) {
 	
