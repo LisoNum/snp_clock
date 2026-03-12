@@ -13,12 +13,12 @@ int main(void){
 	prell1 = buffer; //buffer initialisieren
 
 	//Pinbelegung
-	DDRB|= (1<<PB1); //Ausgang für PWM
-	DDRC|= (1<<PC5); //Aufgang für LED
+	DDRB|= (1<<PB1); //Ausgang fÃ¼r PWM
+	DDRC|= (1<<PC5); //Aufgang fÃ¼r LED
 	DDRD|= ~(1<<PD3); //PD3 als Eingang
 	PORTD|= (1<<PD3); //Pull-Up an
 	
-	//Registerbelegung für PWM
+	//Registerbelegung fÃ¼r PWM
 	TCCR1A|= (1<<WGM11); //Fast-PWM with Top at ICR1
 	TCCR1B|= (1<<WGM13) | (1<<WGM12); //Fast-PWM with Top at ICR1
 	TCCR1B|= (1<<CS11) | (1<<CS10); //PreScaler 64
@@ -30,35 +30,20 @@ int main(void){
 	EIMSK|= (1<<INT1); //aktiviert Interrupt INT1
 	EICRA|= (ISC11); //Interrupt auf fallender Flanke getriggert;
 
-	//Registerbelegung für Blinken
-	TCCR0B|= (1<<CS02) | (1<<CS00); //Prescaler 1024
-	OCR0A = 255; //circa 3Hz
-	TCCR0A|= (1<<WGM01); //aktiviert CTC
-	TIMSK0|= (1<<OCIE0A); //aktiviert compare Interrupt
-
-
 	sei();
 	
 	while (1) {
-
-		if (prell1 != 0) {
-			prell1--;
-		}
-		_delay_ms(20);
-
+		prellCheck(prell1);
 	}
 	
 }
 
-ISR(INT1_vect) {
-	if (prell1 == 0) {
-		DDRC^=(1<<PC5);
-		prell1 = buffer;
-	}
-}
+void prellCheck(int prell1) {
 
-ISR(TIMER0_COMPA_vect) {
-	PORTC^= (1<<PC5);
+	if (prell1 != 0) {
+			prell1--;
+		}
+		_delay_ms(20);
 }
 
 
