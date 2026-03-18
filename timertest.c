@@ -5,9 +5,15 @@
 #include <avr/io.h>
 
 
+volatile uint8_t display_mode = 0; //0 for minutes, 1 for seconds
 
+//random values
+volatile uint8_t hours = 11;
+volatile uint8_t minutes = 38;
+volatile uint8_t seconds = 27; 
+
+//settings for each button
 const int buffer = 6;
-volatile uint16_t s = 0;
 volatile int prell1;
 volatile int prell2;
 volatile int prell3;
@@ -19,20 +25,19 @@ int main(void){
 	prell3= buffer;
 
 	LEDSetup();
-	
 	pwmSetup();
-	
 	buttonSetup();
-
 	sei();
-	
+
 	while (1) {
+		
+		asm("nop");
 		prellCheck(prell1, prell2, prell3);
 	}
 	
 }
 
-void prellCheck(int prell1, int prell2, int prell3) {
+void prellCheck() {
 
 	if (prell1 != 0) {
 		prell1--;
@@ -61,12 +66,13 @@ void pwmSetup() {
 }
 
 void LEDSetup() {
-	DDRD|= (1<<PD5) | (1<<PD6) | (1<<PD7);
-	DDRB|= (1<<PB0) | (1<<PB2);
-	DDRC|= (1<<PC5) | (1<<PC4) | (1<<PC3) | (1<<PC2) | (1<<PC1) | (1<<PC0);
+	DDRD|= (1<<PD5) | (1<<PD6) | (1<<PD7); //top three of hours
+	DDRB|= (1<<PB0) | (1<<PB2); //bottom two
+	DDRC|= (1<<PC5) | (1<<PC4) | (1<<PC3) | (1<<PC2) | (1<<PC1) | (1<<PC0); //minutes or seconds
 }
 
 void buttonSetup() {
+
 
 	//set input Pins for Buttons
 	DDRD&= ~(1<<PD2) & ~(1<<P3) & ~(1<<P4); //Set Ports as Input
@@ -79,5 +85,23 @@ void buttonSetup() {
 	PCMSK2|= (1<<PCINT20);//interrupt on PCINT20
 }
 
+void update display()
+
+void calibrate_time() {
+	
+	if (seconds == 60) {
+		minutes++;
+		seconds = 0;
+
+		if (minutes == 60) {
+			hours++;
+			minutes = 0;
+
+			if (hours == 24) {
+				hours = 0;
+			}
+		}
+	}
+}
 
 
