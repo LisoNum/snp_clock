@@ -6,6 +6,7 @@
 
 
 volatile uint8_t display_mode = 0; //0 for minutes, 1 for seconds
+volatile uint8_t stopwatch_mode = 0; //0 for off, 1 for on
 
 //random values
 volatile uint8_t hours = 11;
@@ -85,7 +86,19 @@ void buttonSetup() {
 	PCMSK2|= (1<<PCINT20);//interrupt on PCINT20
 }
 
-void update display()
+void update display() {
+
+	//hours
+	PORTD = (PORTD & ~0xE0) | (0xE0 & (hours<<3)); //PD7, PD6, PD5
+	PORTB = (PORTB & ~0x05) | (0x01 & hours) | (0x04 & (hours<<1));
+
+	if (display_mode == 0) {
+		PORTC = (PORTC & ~0x3F) | (0x3F & minutes);
+	}
+	else {
+		PORTC = (PORTC &  ~0x3F) | (0x3f & seconds);
+	}
+}
 
 void calibrate_time() {
 	
