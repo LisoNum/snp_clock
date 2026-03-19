@@ -6,11 +6,10 @@
 
 
 volatile uint8_t display_mode = 0; //0 for minutes, 1 for seconds
-volatile uint8_t stopwatch_mode = 0; //0 for off, 1 for on
 volatile uint8_t set_time = 0; //0 for normal operation, 1 for blinking mode
 volatile uint8_t chosen_row = 0; //0 for hours, 1 for minutes, 2 for seconds
 volatile uint8_t pwm_values[] = {254, 199, 149}; //levels for brightness
-volatile uint8_t pwm_level[] = 0; //will be devided with %3
+volatile uint8_t pwm_level[] = 0; //will be devided by %3
 
 //random values
 volatile uint8_t hours = 11;
@@ -69,6 +68,8 @@ void pwmSetup() {
 
 	OCR1A = pwm_values[pwm_level]; //sets brightness
 
+}
+
 void LEDSetup() {
 	DDRD|= (1<<PD5) | (1<<PD6) | (1<<PD7); //top three of hours
 	DDRB|= (1<<PB0) | (1<<PB2); //bottom two
@@ -79,7 +80,7 @@ void buttonSetup() {
 
 
 	//set input Pins for Buttons
-	DDRD&= ~(1<<PD2) & ~(1<<PD3) & ~(1<<PD4); //Set Ports as Input
+	DDRD&= ~(1<<PD2) & ~(1<<PD3) & ~(1<<PD4); //Set PD2, PD3, PD4
 	PORTD|= (1<<PD2) | (1<<PD3) | (1<<PD4); //turn on Pull-up
 
 	//manage Interrupts
@@ -89,9 +90,15 @@ void buttonSetup() {
 	PCMSK2|= (1<<PCINT20);//interrupt on PCINT20
 }
 
+//updates Display according to current mode
 void update_display() {
 
-	
+	if (set_time == 0) {
+		normal_display_operation();
+	}
+	else {
+		setting_time_LEDs();
+	}
 }
 
 void normal_display_operation() {
@@ -100,7 +107,7 @@ void normal_display_operation() {
 	PORTD = (PORTD & ~0xE0) | (0xE0 & (hours<<3)); //PD7, PD6, PD5
 	PORTB = (PORTB & ~0x05) | (0x01 & hours) | (0x04 & (hours<<1));
 
-	if (display_mode == 0) {
+	if (display_mode%2 == 0) {
 		PORTC = (PORTC & ~0x3F) | (0x3F & minutes);
 	}
 	else {
@@ -131,8 +138,38 @@ void calibrate_time() {
 	}
 }
 
-//switch between stopwatch mode and normal mode
-ISR(PCINT2_vector) {
+//change displayed row or increase time
+ISR(INT0_vector) {
 
+	if (prell1 != 0) {
+		return 0; //exits function
+	}
+
+	if (set_time == 0) {
+		display_mode++; //changes displaymode
+		update_display(); //updates display
+		return 0; //exits function
+	}
+	//TODO settime==1;
+}
+
+//change pwm-level ofr exit time-set mode
+ISR(PCINT2_vector) {
+	
+	if (prell3 != 0) {
+		return 0; //exites function
+	}
+	
+	if (set_time == 0) { //not in Time-Set-Mode
+		pwm_level++;
+		OCR1A = pwm_values[set_time%3]; //switches right-round 
+		return 0; //exits after pwm is switched
+	}
+
+	if (set_time == 1) {
+		set_time == 0; //exits Time-setting-Mode
+		update_display(); //updates Display accordingly 
+		return 0; //exits after mode is switched
+	}
 }
 
