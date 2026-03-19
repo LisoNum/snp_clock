@@ -7,6 +7,8 @@
 
 volatile uint8_t display_mode = 0; //0 for minutes, 1 for seconds
 volatile uint8_t stopwatch_mode = 0; //0 for off, 1 for on
+volatile uint8_t set_time = 0; //0 for normal operation, 1 for blinking mode
+volatile uint8_t chosen_row = 0; //0 for hours, 1 for minutes, 2 for seconds
 
 //random values
 volatile uint8_t hours = 11;
@@ -33,7 +35,7 @@ int main(void){
 	while (1) {
 		
 		asm("nop");
-		prellCheck(prell1, prell2, prell3);
+		prellCheck();
 	}
 	
 }
@@ -76,7 +78,7 @@ void buttonSetup() {
 
 
 	//set input Pins for Buttons
-	DDRD&= ~(1<<PD2) & ~(1<<P3) & ~(1<<P4); //Set Ports as Input
+	DDRD&= ~(1<<PD2) & ~(1<<PD3) & ~(1<<PD4); //Set Ports as Input
 	PORTD|= (1<<PD2) | (1<<PD3) | (1<<PD4); //turn on Pull-up
 
 	//manage Interrupts
@@ -86,7 +88,12 @@ void buttonSetup() {
 	PCMSK2|= (1<<PCINT20);//interrupt on PCINT20
 }
 
-void update display() {
+void update_display() {
+
+	
+}
+
+void normal_display_operation() {
 
 	//hours
 	PORTD = (PORTD & ~0xE0) | (0xE0 & (hours<<3)); //PD7, PD6, PD5
@@ -98,6 +105,12 @@ void update display() {
 	else {
 		PORTC = (PORTC &  ~0x3F) | (0x3f & seconds);
 	}
+}
+
+void setting_time_LEDs() {
+
+	//blinking hours
+
 }
 
 void calibrate_time() {
@@ -117,4 +130,8 @@ void calibrate_time() {
 	}
 }
 
+//switch between stopwatch mode and normal mode
+ISR(PCINT2_vector) {
+
+}
 
