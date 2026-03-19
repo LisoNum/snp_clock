@@ -9,6 +9,8 @@ volatile uint8_t display_mode = 0; //0 for minutes, 1 for seconds
 volatile uint8_t stopwatch_mode = 0; //0 for off, 1 for on
 volatile uint8_t set_time = 0; //0 for normal operation, 1 for blinking mode
 volatile uint8_t chosen_row = 0; //0 for hours, 1 for minutes, 2 for seconds
+volatile uint8_t pwm_values[] = {254, 199, 149}; //levels for brightness
+volatile uint8_t pwm_level[] = 0; //will be devided with %3
 
 //random values
 volatile uint8_t hours = 11;
@@ -60,13 +62,12 @@ void pwmSetup() {
 	DDRB|= (1<<PB1); //Ausgang für PWM
 
 	//Registerbelegung für PWM
-	TCCR1A|= (1<<WGM11); //Fast-PWM with Top at ICR1
-	TCCR1B|= (1<<WGM13) | (1<<WGM12); //Fast-PWM with Top at ICR1
-	TCCR1B|= (1<<CS11) | (1<<CS10); //PreScaler 64
-	ICR1 = 35; //circa 450 Hz
-	OCR1A = 17; //50% Duty-Cycle
-	TCCR1A|= (1<<COM1A1); //Clear on Compare Match, Set at Top 
-}
+	TCCR1A|= (1<<COM1A1); //Clear-on Compare Match
+	TCCR1A|= (1<<WGM10); //8-Bit fast PWM
+	TCCR1B|= (1<<WGM12);
+	TCCR1B|= (1<<CS11); //Prescaler 8
+
+	OCR1A = pwm_values[pwm_level]; //sets brightness
 
 void LEDSetup() {
 	DDRD|= (1<<PD5) | (1<<PD6) | (1<<PD7); //top three of hours
