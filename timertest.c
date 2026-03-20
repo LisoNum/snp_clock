@@ -37,6 +37,8 @@ int main(void){
 	buttonSetup();
 	sei();
 
+	update_display(); //for debug purposes
+
 	while (1) {
 		
 		asm("nop");
@@ -101,7 +103,7 @@ void update_display() {
 		normal_display_operation();
 	}
 	else {
-		setting_time_LEDs();
+		normal_display_operation(); //for debug purposes
 	}
 }
 
@@ -171,7 +173,7 @@ ISR(PCINT2_vect) {
 	}
 
 	if (set_time == 1) {
-		set_time ==0; //exits Time-setting-Mode
+		set_time = 0; //exits Time-setting-Mode
 		update_display(); //updates Display accordingly 
 		return 0; //exits after mode is switched
 	}
