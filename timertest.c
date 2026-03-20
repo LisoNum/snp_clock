@@ -37,6 +37,8 @@ int main(void){
 	prell2 = buffer;
 	prell3 = buffer;
 
+	timer1Setup();
+	timer2Setup();
 	LEDSetup();
 	pwmSetup();
 	buttonSetup();
@@ -227,7 +229,7 @@ ISR(PCINT2_vect) {
 	}
 }
 
-void setup_timer2() {
+void timer2Setup() {
     // Activate asynchronous mode with an external clock 
     ASSR |= (1 << AS2);
 
@@ -244,7 +246,7 @@ void setup_timer2() {
     }
 }
 
-void setup_timer1() {
+void timer1Setup() {
     // Configure Timer1 for PWM on PB1
     TCCR1A = (1 << WGM10) | (1 << COM1A1) | (1 << COM1B1); // 8-bit Fast PWM, Clear on Compare Match
     TCCR1B = (1 << WGM12) | (1 << CS11); // Prescaler = 8
