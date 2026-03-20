@@ -5,10 +5,12 @@
 #include <avr/io.h>
 
 
+
+
 volatile uint8_t display_mode = 0; //0 for minutes, 1 for seconds
 volatile uint8_t set_time = 0; //0 for normal operation, 1 for blinking mode
 volatile uint8_t chosen_row = 0; //0 for hours, 1 for minutes, 2 for seconds
-volatile uint8_t pwm_values[] = {254, 199, 149}; //levels for brightness
+volatile uint8_t pwm_values[] = {254, 100, 0}; //levels for brightness
 volatile uint8_t pwm_level = 0; //will be devided by %3
 
 //random values
@@ -17,10 +19,17 @@ volatile uint8_t minutes = 38;
 volatile uint8_t seconds = 27; 
 
 //settings for each button
-const int buffer = 6;
+volatile const int buffer = 6;
 volatile int prell1;
 volatile int prell2;
 volatile int prell3;
+
+//functions for programm
+void LEDSetup(void);
+void pwmSetup(void);
+void buttonSetup(void);
+void update_display(void);
+void prellCheck(void);
 
 int main(void){
 	
@@ -32,6 +41,8 @@ int main(void){
 	pwmSetup();
 	buttonSetup();
 	sei();
+
+	update_display(); //for debug purposes
 
 	while (1) {
 		
@@ -97,7 +108,7 @@ void update_display() {
 		normal_display_operation();
 	}
 	else {
-		setting_time_LEDs();
+		normal_display_operation(); //for debug purposes
 	}
 }
 
@@ -142,34 +153,77 @@ void calibrate_time() {
 ISR(INT0_vect) {
 
 	if (prell1 != 0) {
-		return 0; //exits function
+		return; //exits function
 	}
 
 	if (set_time == 0) {
 		display_mode++; //changes displaymode
 		update_display(); //updates display
-		return 0; //exits function
+		prell1 = buffer; //resets buffer
+		return; //exits function
 	}
-	//TODO settime==1;
+	if (set_time == 1) {
+		//selects according to row
+		if (chosen_row%3 == 0) {
+			hours++;
+		}
+		if (chosen_row%3 == 1) {
+			minutes++;
+		}
+		if (chosen_row%3 == 2) {
+			seconds++;
+		}
+		calibrate_time; //calculates time
+		update_display; //sets LEDs
+		prell1 = buffer; //resets button
+		return; //exits
+	}
+}
+
+ISR(INT1_vect) {
+
+	if (prell2 != 0) {
+		return; //exits function
+	}
+
+	if (set_time == 0) {
+		set_time = 1; //changes mode
+		update_display(); //updates LEDs
+		prell2 = buffer; //resets Button
+		return; //exits
+	}
+
+	if (set_time == 1) {
+		chosen_row++; //changes selected row
+		update_display; //updates LEDs
+		prell2 = buffer; //resets button
+		return; //exits
+	}
 }
 
 //change pwm-level ofr exit time-set mode
 ISR(PCINT2_vect) {
 	
+	if (PIND & (1<<PD4)) {
+		return; //ignores Button releases
+	}
+
 	if (prell3 != 0) {
-		return 0; //exites function
+		return; //exites function
 	}
 	
 	if (set_time == 0) { //not in Time-Set-Mode
 		pwm_level++;
 		OCR1A = pwm_values[pwm_level%3]; //switches right-round 
-		return 0; //exits after pwm is switched
+		prell3 = buffer; //resets buffer
+		return; //exits after pwm is switched
 	}
 
 	if (set_time == 1) {
-		set_time ==0; //exits Time-setting-Mode
+		set_time = 0; //exits Time-setting-Mode
 		update_display(); //updates Display accordingly 
-		return 0; //exits after mode is switched
+		prell3 = buffer; //resets buffer
+		return; //exits after mode is switched
 	}
 }
 
