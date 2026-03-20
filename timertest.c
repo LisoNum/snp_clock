@@ -9,7 +9,7 @@ volatile uint8_t display_mode = 0; //0 for minutes, 1 for seconds
 volatile uint8_t set_time = 0; //0 for normal operation, 1 for blinking mode
 volatile uint8_t chosen_row = 0; //0 for hours, 1 for minutes, 2 for seconds
 volatile uint8_t pwm_values[] = {254, 199, 149}; //levels for brightness
-volatile uint8_t pwm_level[] = 0; //will be devided by %3
+volatile uint8_t pwm_level = 0; //will be devided by %3
 
 //random values
 volatile uint8_t hours = 11;
@@ -139,7 +139,7 @@ void calibrate_time() {
 }
 
 //change displayed row or increase time
-ISR(INT0_vector) {
+ISR(INT0_vect) {
 
 	if (prell1 != 0) {
 		return 0; //exits function
@@ -154,7 +154,7 @@ ISR(INT0_vector) {
 }
 
 //change pwm-level ofr exit time-set mode
-ISR(PCINT2_vector) {
+ISR(PCINT2_vect) {
 	
 	if (prell3 != 0) {
 		return 0; //exites function
@@ -162,12 +162,12 @@ ISR(PCINT2_vector) {
 	
 	if (set_time == 0) { //not in Time-Set-Mode
 		pwm_level++;
-		OCR1A = pwm_values[set_time%3]; //switches right-round 
+		OCR1A = pwm_values[pwm_level%3]; //switches right-round 
 		return 0; //exits after pwm is switched
 	}
 
 	if (set_time == 1) {
-		set_time == 0; //exits Time-setting-Mode
+		set_time ==0; //exits Time-setting-Mode
 		update_display(); //updates Display accordingly 
 		return 0; //exits after mode is switched
 	}
