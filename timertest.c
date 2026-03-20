@@ -5,6 +5,8 @@
 #include <avr/io.h>
 
 
+
+
 volatile uint8_t display_mode = 0; //0 for minutes, 1 for seconds
 volatile uint8_t set_time = 0; //0 for normal operation, 1 for blinking mode
 volatile uint8_t chosen_row = 0; //0 for hours, 1 for minutes, 2 for seconds
@@ -19,6 +21,8 @@ volatile uint8_t seconds = 27;
 //settings for each button
 const int buffer = 6;
 volatile int prell1;
+volatile int prell2;
+volatile int prell3;
 volatile int prell2;
 volatile int prell3;
 
