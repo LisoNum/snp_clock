@@ -26,7 +26,7 @@ int main(void){
 	
 	prell1 = buffer; //buffer initialisieren
 	prell2 = buffer;
-	prell3= buffer;
+	prell3 = buffer;
 
 	LEDSetup();
 	pwmSetup();
@@ -173,3 +173,28 @@ ISR(PCINT2_vect) {
 	}
 }
 
+void setup_timer2() {
+    // Activate asynchronous mode with an external clock 
+    ASSR |= (1 << AS2);
+
+    // Set Timer2 to Normal mode
+    TCCR2A = 0;                     	    // Normal mode
+    TCCR2B = (1 << CS22) | (1 << CS20);     // Prescaler = 128
+
+    // Enable Timer2 Overflow interrupt
+    TIMSK2 = (1 << TOIE2);
+
+    // Wait for asynchronous clock stabilization
+    while (ASSR & ((1 << TCR2AUB) | (1 << TCR2BUB))) {
+        // Wait until Timer2 registers are updated
+    }
+}
+
+void setup_timer1() {
+    // Configure Timer1 for PWM on PB1
+    TCCR1A = (1 << WGM10) | (1 << COM1A1) | (1 << COM1B1); // 8-bit Fast PWM, Clear on Compare Match
+    TCCR1B = (1 << WGM12) | (1 << CS11); // Prescaler = 8
+
+    OCR1A = pwm_values[pwm_level]; // Set initial brightness
+    OCR1B = pwm_values[pwm_level]; // Set initial brightness
+}
