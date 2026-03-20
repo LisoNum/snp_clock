@@ -19,12 +19,17 @@ volatile uint8_t minutes = 38;
 volatile uint8_t seconds = 27; 
 
 //settings for each button
-const int buffer = 6;
+volatile const int buffer = 6;
 volatile int prell1;
 volatile int prell2;
 volatile int prell3;
-volatile int prell2;
-volatile int prell3;
+
+//functions for programm
+void LEDSetup(void);
+void pwmSetup(void);
+void buttonSetup(void);
+void update_display(void);
+void prellCheck(void);
 
 int main(void){
 	
@@ -148,13 +153,14 @@ void calibrate_time() {
 ISR(INT0_vect) {
 
 	if (prell1 != 0) {
-		return 0; //exits function
+		return; //exits function
 	}
 
 	if (set_time == 0) {
 		display_mode++; //changes displaymode
 		update_display(); //updates display
-		return 0; //exits function
+		prell1 = buffer; //resets buffer
+		return; //exits function
 	}
 	//TODO settime==1;
 }
@@ -163,19 +169,21 @@ ISR(INT0_vect) {
 ISR(PCINT2_vect) {
 	
 	if (prell3 != 0) {
-		return 0; //exites function
+		return; //exites function
 	}
 	
 	if (set_time == 0) { //not in Time-Set-Mode
 		pwm_level++;
 		OCR1A = pwm_values[pwm_level%3]; //switches right-round 
-		return 0; //exits after pwm is switched
+		prell3 = buffer; //resets buffer
+		return; //exits after pwm is switched
 	}
 
 	if (set_time == 1) {
 		set_time = 0; //exits Time-setting-Mode
 		update_display(); //updates Display accordingly 
-		return 0; //exits after mode is switched
+		prell3 = buffer; //resets buffer
+		return; //exits after mode is switched
 	}
 }
 
