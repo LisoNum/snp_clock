@@ -29,6 +29,8 @@ void LEDSetup(void);
 void pwmSetup(void);
 void buttonSetup(void);
 void update_display(void);
+void normal_display_operation(void);
+void setting_time_LEDs(void);
 void prellCheck(void);
 
 int main(void){
@@ -40,7 +42,6 @@ int main(void){
 	timer1Setup();
 	timer2Setup();
 	LEDSetup();
-	pwmSetup();
 	buttonSetup();
 	sei();
 
@@ -69,20 +70,6 @@ void prellCheck() {
 
 }
 
-void pwmSetup() {
-
-	DDRB|= (1<<PB1); //Ausgang für PWM
-
-	//Registerbelegung für PWM
-	TCCR1A|= (1<<COM1A1); //Clear-on Compare Match
-	TCCR1A|= (1<<WGM10); //8-Bit fast PWM
-	TCCR1B|= (1<<WGM12);
-	TCCR1B|= (1<<CS11); //Prescaler 8
-
-	OCR1A = pwm_values[pwm_level]; //sets brightness
-
-}
-
 void LEDSetup() {
 	DDRD|= (1<<PD5) | (1<<PD6) | (1<<PD7); //top three of hours
 	DDRB|= (1<<PB0) | (1<<PB2); //bottom two
@@ -106,11 +93,12 @@ void buttonSetup() {
 //updates Display according to current mode
 void update_display() {
 
+	calibrate_time();
 	if (set_time == 0) {
 		normal_display_operation();
 	}
 	else {
-		normal_display_operation(); //for debug purposes
+		setting_time_LEDs(); 
 	}
 }
 
@@ -128,10 +116,36 @@ void normal_display_operation() {
 	}
 }
 
+//selected row when set_time==1 is supposed to blink
 void setting_time_LEDs() {
+	
+	//bit mask for the diffrent Ports for easier access
+	uint8_t bitMask_hoursD = (PORTD & ~0xE0) | (0xE0 & (hours<<3)); 
+	uint8_t bitMask_hoursB = (PORTB & ~0x05) | (0x01 & hours) | (0x04 & (hours<<1));
+	uint8_t bitMask_minutes = (PORTC & ~0x3F) | (0x3F & minutes);
+	uint8_t bitMask_seconds = PORTC = (PORTC &  ~0x3F) | (0x3f & seconds);
 
-	//blinking hours
+	//hours
+	if (chosen_row%3 == 0) {
+		PORTD ^= bitMask_hoursD; //Flips bits on and off
+		PORTB ^= bitMask_hoursB;
+	}
+	else {
+		PORTD = bitMask_hoursD; //only turns them on
+		PORTB = bitMask_hoursB;
+	}
 
+	//minutes or seconds
+	if (chosen_row%3 == 1) {
+		PORTC ^= bitMask_minutes; //minutes
+		display_mode = 0; //this way displayed row will remain same after mode switch
+	}
+	else {
+		if (chosen_row%3 == 2) {
+			PORTC ^= bitMask_seconds; //seconds
+			display_mode = 1;
+		}
+	}
 }
 
 void calibrate_time() {
@@ -175,8 +189,7 @@ ISR(INT0_vect) {
 		if (chosen_row%3 == 2) {
 			seconds++;
 		}
-		calibrate_time; //calculates time
-		update_display; //sets LEDs
+		update_display(); //sets LEDs
 		prell1 = buffer; //resets button
 		return; //exits
 	}
@@ -190,6 +203,7 @@ ISR(INT1_vect) {
 
 	if (set_time == 0) {
 		set_time = 1; //changes mode
+		chosen_row = 0; //resets chosen blinking row to hours
 		update_display(); //updates LEDs
 		prell2 = buffer; //resets Button
 		return; //exits
@@ -223,6 +237,7 @@ ISR(PCINT2_vect) {
 
 	if (set_time == 1) {
 		set_time = 0; //exits Time-setting-Mode
+		display_mode = 
 		update_display(); //updates Display accordingly 
 		prell3 = buffer; //resets buffer
 		return; //exits after mode is switched
@@ -247,10 +262,14 @@ void timer2Setup() {
 }
 
 void timer1Setup() {
-    // Configure Timer1 for PWM on PB1
-    TCCR1A = (1 << WGM10) | (1 << COM1A1) | (1 << COM1B1); // 8-bit Fast PWM, Clear on Compare Match
-    TCCR1B = (1 << WGM12) | (1 << CS11); // Prescaler = 8
 
-    OCR1A = pwm_values[pwm_level]; // Set initial brightness
-    OCR1B = pwm_values[pwm_level]; // Set initial brightness
+    DDRB|= (1<<PB1); //Ausgang für PWM
+
+	//Registerbelegung für PWM
+	TCCR1A|= (1<<COM1A1); //Clear-on Compare Match
+	TCCR1A|= (1<<WGM10); //8-Bit fast PWM
+	TCCR1B|= (1<<WGM12);
+	TCCR1B|= (1<<CS11); //Prescaler 8
+
+	OCR1A = pwm_values[pwm_level]; //sets brightness
 }
