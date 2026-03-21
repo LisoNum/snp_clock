@@ -237,7 +237,7 @@ ISR(PCINT2_vect) {
 
 	if (set_time == 1) {
 		set_time = 0; //exits Time-setting-Mode
-		display_mode = 
+		display_mode = 0; 
 		update_display(); //updates Display accordingly 
 		prell3 = buffer; //resets buffer
 		return; //exits after mode is switched
