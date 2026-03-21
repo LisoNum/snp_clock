@@ -244,6 +244,13 @@ ISR(PCINT2_vect) {
 	}
 }
 
+//increases seconds every time timer2 overflows, calibrates time if seconds reach 60 and updates display
+ISR(TIMER2_OVF_vect) {
+	seconds++; 
+	calibrate_time(); //checks if seconds reach 60
+	update_display();
+}
+
 void timer2Setup() {
     // Activate asynchronous mode with an external clock 
     ASSR |= (1 << AS2);
