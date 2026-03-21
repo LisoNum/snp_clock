@@ -211,7 +211,7 @@ ISR(INT1_vect) {
 
 	if (set_time == 1) {
 		chosen_row++; //changes selected row
-		update_display; //updates LEDs
+		update_display(); //updates LEDs
 		prell2 = buffer; //resets button
 		return; //exits
 	}
