@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>
+#include <avr/sleep.h>
 
 
 
@@ -31,7 +32,7 @@ void buttonSetup(void);
 void update_display(void);
 void normal_display_operation(void);
 void setting_time_LEDs(void);
-void prellCheck(void);
+/*void prellCheck(void);*/
 
 int main(void){
 	
@@ -50,12 +51,13 @@ int main(void){
 	while (1) {
 		
 		asm("nop");
-		prellCheck();
+		enter _sleep_mode(); //saves power when nothing is to do
+		_delay_ms(5); //delay for prell-check
 	}
-	
+	return 0;
 }
 
-void prellCheck() {
+/*void prellCheck() {
 
 	if (prell1 != 0) {
 		prell1--;
@@ -69,6 +71,7 @@ void prellCheck() {
 	_delay_ms(20);
 
 }
+*/
 
 void LEDSetup() {
 	DDRD|= (1<<PD5) | (1<<PD6) | (1<<PD7); //top three of hours
@@ -283,4 +286,18 @@ void timer1Setup() {
 	TCCR1B|= (1<<CS11); //Prescaler 8
 
 	OCR1A = pwm_values[pwm_level]; //sets brightness
+}
+
+void enter_sleep_mode() {
+	if(OCR1A == 255) {
+        set_sleep_mode(SLEEP_MODE_PWR_SAVE); // Set Power-Down mode --> avr/sleep.h
+        sleep_enable();                      // Enable sleep mode
+        sleep_cpu();                         // Put the CPU to sleep
+    } else {
+	set_sleep_mode(SLEEP_MODE_IDLE); // Set Idle mode --> avr/sleep.h
+        sleep_enable();                      // Enable sleep mode
+        sleep_cpu();                         // Put the CPU to sleep	
+    }
+    // CPU wakes up here after an interrupt
+    sleep_disable(); // Disable sleep mode after wake-up
 }
