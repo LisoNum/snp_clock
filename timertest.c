@@ -93,7 +93,8 @@ void buttonSetup() {
 //updates Display according to current mode
 void update_display() {
 
-	calibrate_time();
+	calibrate_time(); //enforces time-rules
+
 	if (set_time == 0) {
 		normal_display_operation();
 	}
@@ -246,9 +247,12 @@ ISR(PCINT2_vect) {
 
 //increases seconds every time timer2 overflows, calibrates time if seconds reach 60 and updates display
 ISR(TIMER2_OVF_vect) {
-	seconds++; 
-	calibrate_time(); //checks if seconds reach 60
-	update_display();
+	
+	if (set_time == 0) {
+		seconds++; //only updates time when clock is moving nromaly
+	}
+	
+	update_display(); //just to be sure
 }
 
 void timer2Setup() {
