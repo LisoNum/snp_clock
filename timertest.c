@@ -18,9 +18,6 @@ volatile uint8_t seconds = 27;
 
 //settings for each button
 volatile const int buffer = 6;
-volatile int prell1;
-volatile int prell2;
-volatile int prell3;
 
 //functions for programm
 void LEDSetup(void);
@@ -29,14 +26,8 @@ void buttonSetup(void);
 void update_display(void);
 void normal_display_operation(void);
 void setting_time_LEDs(void);
-/*void prellCheck(void);*/
 
 int main(void){
-	
-	prell1 = buffer; //buffer initialisieren
-	prell2 = buffer;
-	prell3 = buffer;
-
 	timer1Setup();
 	timer2Setup();
 	LEDSetup();
@@ -48,7 +39,7 @@ int main(void){
 	while (1) {
 		
 		asm("nop");
-		enter _sleep_mode(); //saves power when nothing is to do
+		enter_sleep_mode(); //saves power when nothing is to do
 		_delay_ms(5); //delay for prell-check
 	}
 	return 0;
