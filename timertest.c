@@ -17,9 +17,6 @@ volatile uint8_t hours = 11;
 volatile uint8_t minutes = 38;
 volatile uint8_t seconds = 27; 
 
-//settings for each button
-volatile const int buffer = 6;
-
 //functions for programm
 void LEDSetup(void);
 void pwmSetup(void);
