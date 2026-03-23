@@ -106,8 +106,8 @@ void normal_display_operation() {
 void setting_time_LEDs() {
 	
 	//bit mask for the diffrent Ports for easier access
-	uint8_t bitMask_hoursD = (PORTD & ~0xE0) | (0xE0 & (hours<<3)); 
-	uint8_t bitMask_hoursB = (PORTB & ~0x05) | (0x01 & hours) | (0x04 & (hours<<1));
+	uint8_t bitMask_hoursD = (0xE0 & (hours<<3)); 
+	uint8_t bitMask_hoursB = (0x01 & hours) | (0x04 & (hours<<1));
 	uint8_t bitMask_minutes = (PORTC & ~0x3F) | (0x3F & minutes);
 	uint8_t bitMask_seconds = (PORTC &  ~0x3F) | (0x3f & seconds);
 
@@ -116,12 +116,8 @@ void setting_time_LEDs() {
         PORTD = bitMask_hoursD;
         PORTB = bitMask_hoursB;
     }
-    if (chosen_row%3 != 1) {
-        PORTC = bitMask_minutes;
-    }
-    if (chosen_row%3 != 2) {
-        PORTC = bitMask_seconds;
-    }
+    
+   //delteted chosen_row != 1 / 1= 2 because it will be set later
 
     //blink state is toggled
     blink_state ^= 1;
@@ -153,15 +149,15 @@ void setting_time_LEDs() {
 
 void calibrate_time() {
 	
-	if (seconds == 60) {
+	if (seconds >= 60) {
 		minutes++;
 		seconds = 0;
 
-		if (minutes == 60) {
+		if (minutes >= 60) {
 			hours++;
 			minutes = 0;
 
-			if (hours == 24) {
+			if (hours >= 24) {
 				hours = 0;
 			}
 		}
