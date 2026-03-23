@@ -24,11 +24,16 @@ void buttonSetup(void);
 void update_display(void);
 void normal_display_operation(void);
 void setting_time_LEDs(void);
+void timer1Setup(void);
+void timer2Setup(void);
+void enter_sleep_mode(void);
+void calibrate_time(void);
 
 int main(void){
+
+	LEDSetup();
 	timer1Setup();
 	timer2Setup();
-	LEDSetup();
 	buttonSetup();
 	sei();
 
@@ -41,17 +46,16 @@ int main(void){
 		_delay_ms(5); //delay for prell-check
 	}
 	return 0;
+	
 }
 
 void LEDSetup() {
 	DDRD|= (1<<PD5) | (1<<PD6) | (1<<PD7); //top three of hours
-	DDRB|= (1<<PB0) | (1<<PB2); //bottom two
+	DDRB|= (1<<PB0) | (1<<PB2); //bottom two of hours
 	DDRC|= (1<<PC5) | (1<<PC4) | (1<<PC3) | (1<<PC2) | (1<<PC1) | (1<<PC0); //minutes or seconds
 }
 
 void buttonSetup() {
-
-
 	//set input Pins for Buttons
 	DDRD&= ~(1<<PD2) & ~(1<<PD3) & ~(1<<PD4); //Set PD2, PD3, PD4
 	PORTD|= (1<<PD2) | (1<<PD3) | (1<<PD4); //turn on Pull-up
@@ -92,12 +96,12 @@ void normal_display_operation() {
 
 //selected row when set_time==1 is supposed to blink
 void setting_time_LEDs() {
-
-    //masks for easier toggle
-    uint8_t bitMask_hoursD = (PORTD & ~0xE0) | (0xE0 & (hours<<3)); //two for the hours
-    uint8_t bitMask_hoursB = (PORTB & ~0x05) | (0x01 & hours) | (0x04 & (hours<<1));
-    uint8_t bitMask_minutes = (PORTC & ~0x3F) | (0x3F & minutes);
-    uint8_t bitMask_seconds = (PORTC & ~0x3F) | (0x3F & seconds);
+	
+	//bit mask for the diffrent Ports for easier access
+	uint8_t bitMask_hoursD = (PORTD & ~0xE0) | (0xE0 & (hours<<3)); 
+	uint8_t bitMask_hoursB = (PORTB & ~0x05) | (0x01 & hours) | (0x04 & (hours<<1));
+	uint8_t bitMask_minutes = (PORTC & ~0x3F) | (0x3F & minutes);
+	uint8_t bitMask_seconds = (PORTC &  ~0x3F) | (0x3f & seconds);
 
     //non-chosen rows will be normaly displayed
     if (chosen_row%3 != 0) {
@@ -216,9 +220,11 @@ ISR(PCINT2_vect) {
 
 //increases seconds every time timer2 overflows, calibrates time if seconds reach 60 and updates display
 ISR(TIMER2_OVF_vect) {
-	if (set_time == 0) {
-		seconds++; //only updates time when clock is moving nromaly
+	if (set_time == 1) {
+		update_display(); //updates display to ensure blinking
+		return; //exits without changing time
 	}
+	seconds++;
 	update_display(); //just to be sure
 }
 
@@ -255,13 +261,15 @@ void timer1Setup() {
 void enter_sleep_mode() {
 	if(OCR1A == 255) {
         set_sleep_mode(SLEEP_MODE_PWR_SAVE); // Set Power-Down mode --> avr/sleep.h
-        sleep_enable();                      // Enable sleep mode
-        sleep_cpu();                         // Put the CPU to sleep
-    } else {
-	set_sleep_mode(SLEEP_MODE_IDLE); // Set Idle mode --> avr/sleep.h
-        sleep_enable();                      // Enable sleep mode
-        sleep_cpu();                         // Put the CPU to sleep	
-    }
+                             // Put the CPU to sleep
+    } 
+	else {
+		set_sleep_mode(SLEEP_MODE_IDLE); // Set Idle mode --> avr/sleep.h
+	}
+    sleep_enable();                      // Enable sleep mode
+    sleep_cpu();                         // Put the CPU to sleep	
+    
     // CPU wakes up here after an interrupt
     sleep_disable(); // Disable sleep mode after wake-up
 }
+
