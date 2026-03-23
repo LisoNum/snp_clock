@@ -5,6 +5,9 @@
 #include <avr/io.h>
 #include <avr/sleep.h>
 
+#define BAUD 9600
+#define UBRR_VAL (F_CPU / 16 / BAUD - 1)
+
 volatile uint8_t display_mode = 0; //0 for minutes, 1 for seconds
 volatile uint8_t blink_state = 1; //allows blinking, 1 for on, 0 for off
 volatile uint8_t set_time = 0; //0 for normal operation, 1 for blinking mode
@@ -28,6 +31,8 @@ void timer1Setup(void);
 void timer2Setup(void);
 void enter_sleep_mode(void);
 void calibrate_time(void);
+void usartSetup(void);
+void parse_time_command(uint8_t*);
 
 int main(void){
 
@@ -271,5 +276,48 @@ void enter_sleep_mode() {
     
     // CPU wakes up here after an interrupt
     sleep_disable(); // Disable sleep mode after wake-up
+}
+
+void usartSetup(void) {
+    
+    UBRR0H = (uint8_t)(UBRR_VAL >> 8); //set rate
+    UBRR0L = (uint8_t)(UBRR_VAL);
+
+    UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0); //activate receiver/transmitter and aktivate rx interrupt
+
+    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // sets frame format: 8 bits, 1 stop bit
+}
+
+ISR(USART_RX_vect) {
+    static uint8_t buf[12];
+    static uint8_t idx = 0;
+    
+    uint8_t c = UDR0; //reads input
+
+    if (c == '\n' || idx >= 11) {
+        buf[idx] = '\0';
+        parse_time_command(buf);
+        idx = 0;
+    } else {
+        buf[idx++] = c;
+    }
+}
+
+void parse_time_command(uint8_t* buf) {
+    
+	//expectet format: "H08M30S00"
+    if (buf[0] == 'H' && buf[3] == 'M' && buf[6] == 'S') {
+        uint8_t h = (buf[1] - '0') * 10 + (buf[2] - '0');
+        uint8_t m = (buf[4] - '0') * 10 + (buf[5] - '0');
+        uint8_t s = (buf[7] - '0') * 10 + (buf[8] - '0');
+
+        // checks plausability
+        if (h < 24 && m < 60 && s < 60) {
+            hours   = h;
+            minutes = m;
+            seconds = s;
+            update_display();
+        }
+    }
 }
 
