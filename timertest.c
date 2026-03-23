@@ -5,9 +5,6 @@
 #include <avr/io.h>
 #include <avr/sleep.h>
 
-
-
-
 volatile uint8_t display_mode = 0; //0 for minutes, 1 for seconds
 volatile uint8_t set_time = 0; //0 for normal operation, 1 for blinking mode
 volatile uint8_t chosen_row = 0; //0 for hours, 1 for minutes, 2 for seconds
@@ -56,22 +53,6 @@ int main(void){
 	}
 	return 0;
 }
-
-/*void prellCheck() {
-
-	if (prell1 != 0) {
-		prell1--;
-	}
-	if (prell2 != 0) {
-		prell2--;
-	}
-	if (prell3 != 0) {
-		prell3--;
-	}
-	_delay_ms(20);
-
-}
-*/
 
 void LEDSetup() {
 	DDRD|= (1<<PD5) | (1<<PD6) | (1<<PD7); //top three of hours
@@ -171,15 +152,10 @@ void calibrate_time() {
 
 //change displayed row or increase time
 ISR(INT0_vect) {
-
-	if (prell1 != 0) {
-		return; //exits function
-	}
-
+	_delay_ms(5); //wait for the bounce
 	if (set_time == 0) {
 		display_mode++; //changes displaymode
 		update_display(); //updates display
-		prell1 = buffer; //resets buffer
 		return; //exits function
 	}
 	if (set_time == 1) {
@@ -194,67 +170,49 @@ ISR(INT0_vect) {
 			seconds++;
 		}
 		update_display(); //sets LEDs
-		prell1 = buffer; //resets button
 		return; //exits
 	}
 }
 
 ISR(INT1_vect) {
-
-	if (prell2 != 0) {
-		return; //exits function
-	}
-
+	_delay_ms(5); //wait for the bounce
 	if (set_time == 0) {
 		set_time = 1; //changes mode
 		chosen_row = 0; //resets chosen blinking row to hours
 		update_display(); //updates LEDs
-		prell2 = buffer; //resets Button
 		return; //exits
 	}
-
 	if (set_time == 1) {
 		chosen_row++; //changes selected row
 		update_display(); //updates LEDs
-		prell2 = buffer; //resets button
 		return; //exits
 	}
 }
 
 //change pwm-level ofr exit time-set mode
 ISR(PCINT2_vect) {
-	
 	if (PIND & (1<<PD4)) {
 		return; //ignores Button releases
 	}
-
-	if (prell3 != 0) {
-		return; //exites function
-	}
-	
+	_delay_ms(5); //wait for the bounce
 	if (set_time == 0) { //not in Time-Set-Mode
 		pwm_level++;
 		OCR1A = pwm_values[pwm_level%3]; //switches right-round 
-		prell3 = buffer; //resets buffer
 		return; //exits after pwm is switched
 	}
-
 	if (set_time == 1) {
 		set_time = 0; //exits Time-setting-Mode
 		display_mode = 0; 
 		update_display(); //updates Display accordingly 
-		prell3 = buffer; //resets buffer
 		return; //exits after mode is switched
 	}
 }
 
 //increases seconds every time timer2 overflows, calibrates time if seconds reach 60 and updates display
 ISR(TIMER2_OVF_vect) {
-	
 	if (set_time == 0) {
 		seconds++; //only updates time when clock is moving nromaly
 	}
-	
 	update_display(); //just to be sure
 }
 
