@@ -33,6 +33,8 @@ void enter_sleep_mode(void);
 void calibrate_time(void);
 void usartSetup(void);
 void parse_time_command(uint8_t*);
+void usart_send_byte(uint8_t);
+void usart_send_time(void);
 
 int main(void){
 
@@ -40,6 +42,7 @@ int main(void){
 	timer1Setup();
 	timer2Setup();
 	buttonSetup();
+	usartSetup();
 	sei();
 
 	update_display(); //for debug purposes
@@ -194,6 +197,7 @@ ISR(INT1_vect) {
 	if (set_time == 0) {
 		set_time = 1; //changes mode
 		chosen_row = 0; //resets chosen blinking row to hours
+		blink_state = 1; //resets blinking
 		update_display(); //updates LEDs
 		return; //exits
 	}
@@ -318,6 +322,37 @@ void parse_time_command(uint8_t* buf) {
             seconds = s;
             update_display();
         }
+		return;
     }
+
+	 if (buf[0] == 'R' && buf[1] == '?') {
+        usart_send_time();
+        return;
+    }
+}
+
+//sends byte and waits for buffer to clear
+void usart_send_byte(uint8_t data) {
+    while (!(UCSR0A & (1 << UDRE0)));
+    UDR0 = data;
+}
+
+//sends two digit number as ASCII
+static void send_two_digits(uint8_t val) {
+    usart_send_byte('0' + (val / 10));
+    usart_send_byte('0' + (val % 10));
+}
+
+//sends time in format Th:min:s
+void usart_send_time(void) {
+    
+	usart_send_byte('T');
+    usart_send_byte(' ');
+    send_two_digits(hours);
+    usart_send_byte(':');
+    send_two_digits(minutes);
+    usart_send_byte(':');
+    send_two_digits(seconds);
+    usart_send_byte('\n');
 }
 
