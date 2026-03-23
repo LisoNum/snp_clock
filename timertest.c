@@ -6,9 +6,10 @@
 #include <avr/sleep.h>
 
 volatile uint8_t display_mode = 0; //0 for minutes, 1 for seconds
+volatile uint8_t blink_state = 1; //allows blinking, 1 for on, 0 for off
 volatile uint8_t set_time = 0; //0 for normal operation, 1 for blinking mode
 volatile uint8_t chosen_row = 0; //0 for hours, 1 for minutes, 2 for seconds
-volatile uint8_t pwm_values[] = {254, 100, 0}; //levels for brightness
+volatile uint8_t pwm_values[] = {0, 100, 255}; //levels for brightness
 volatile uint8_t pwm_level = 0; //will be devided by %3
 
 //random values
@@ -94,34 +95,51 @@ void normal_display_operation() {
 
 //selected row when set_time==1 is supposed to blink
 void setting_time_LEDs() {
-	
-	//bit mask for the diffrent Ports for easier access
-	uint8_t bitMask_hoursD = (PORTD & ~0xE0) | (0xE0 & (hours<<3)); 
-	uint8_t bitMask_hoursB = (PORTB & ~0x05) | (0x01 & hours) | (0x04 & (hours<<1));
-	uint8_t bitMask_minutes = (PORTC & ~0x3F) | (0x3F & minutes);
-	uint8_t bitMask_seconds = PORTC = (PORTC &  ~0x3F) | (0x3f & seconds);
 
-	//hours
-	if (chosen_row%3 == 0) {
-		PORTD ^= bitMask_hoursD; //Flips bits on and off
-		PORTB ^= bitMask_hoursB;
-	}
-	else {
-		PORTD = bitMask_hoursD; //only turns them on
-		PORTB = bitMask_hoursB;
-	}
+    //masks for easier toggle
+    uint8_t bitMask_hoursD = (PORTD & ~0xE0) | (0xE0 & (hours<<3)); //two for the hours
+    uint8_t bitMask_hoursB = (PORTB & ~0x05) | (0x01 & hours) | (0x04 & (hours<<1));
+    uint8_t bitMask_minutes = (PORTC & ~0x3F) | (0x3F & minutes);
+    uint8_t bitMask_seconds = (PORTC & ~0x3F) | (0x3F & seconds);
 
-	//minutes or seconds
-	if (chosen_row%3 == 1) {
-		PORTC ^= bitMask_minutes; //minutes
-		display_mode = 0; //this way displayed row will remain same after mode switch
-	}
-	else {
-		if (chosen_row%3 == 2) {
-			PORTC ^= bitMask_seconds; //seconds
-			display_mode = 1;
-		}
-	}
+    //non-chosen rows will be normaly displayed
+    if (chosen_row%3 != 0) {
+        PORTD = bitMask_hoursD;
+        PORTB = bitMask_hoursB;
+    }
+    if (chosen_row%3 != 1) {
+        PORTC = bitMask_minutes;
+    }
+    if (chosen_row%3 != 2) {
+        PORTC = bitMask_seconds;
+    }
+
+    //blink state is toggled
+    blink_state ^= 1;
+
+    if (chosen_row%3 == 0) {
+        if (blink_state) {
+            PORTD = bitMask_hoursD; //turned on if blink state is one
+            PORTB = bitMask_hoursB;
+        } else {
+            PORTD &= ~0xE0; //will be turned of if blink state is turned of
+            PORTB &= ~0x05;
+        }
+    }
+    if (chosen_row%3 == 1) {
+        if (blink_state) {
+            PORTC = bitMask_minutes;
+        } else {
+            PORTC &= ~0x3F;
+        }
+    }
+    if (chosen_row%3 == 2) {
+        if (blink_state) {
+            PORTC = bitMask_seconds;
+        } else {
+            PORTC &= ~0x3F;
+        }
+    }
 }
 
 void calibrate_time() {
