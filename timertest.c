@@ -94,7 +94,7 @@ void normal_display_operation() {
 	PORTD = (PORTD & ~0xE0) | (0xE0 & (hours<<3)); //PD7, PD6, PD5
 	PORTB = (PORTB & ~0x05) | (0x01 & hours) | (0x04 & (hours<<1));
 
-	if (display_mode%2 == 0) {
+	if (display_mode == 0) {
 		PORTC = (PORTC & ~0x3F) | (0x3F & minutes);
 	}
 	else {
@@ -112,7 +112,7 @@ void setting_time_LEDs() {
 	uint8_t bitMask_seconds = (PORTC &  ~0x3F) | (0x3f & seconds);
 
     //non-chosen rows will be normaly displayed
-    if (chosen_row%3 != 0) {
+    if (chosen_row != 0) {
         PORTD = bitMask_hoursD;
         PORTB = bitMask_hoursB;
     }
@@ -122,7 +122,7 @@ void setting_time_LEDs() {
     //blink state is toggled
     blink_state ^= 1;
 
-    if (chosen_row%3 == 0) {
+    if (chosen_row == 0) {
         if (blink_state) {
             PORTD = bitMask_hoursD; //turned on if blink state is one
             PORTB = bitMask_hoursB;
@@ -131,14 +131,14 @@ void setting_time_LEDs() {
             PORTB &= ~0x05;
         }
     }
-    if (chosen_row%3 == 1) {
+    if (chosen_row == 1) {
         if (blink_state) {
             PORTC = bitMask_minutes;
         } else {
             PORTC &= ~0x3F;
         }
     }
-    if (chosen_row%3 == 2) {
+    if (chosen_row == 2) {
         if (blink_state) {
             PORTC = bitMask_seconds;
         } else {
@@ -168,19 +168,19 @@ void calibrate_time() {
 ISR(INT0_vect) {
 	_delay_ms(5); //wait for the bounce
 	if (set_time == 0) {
-		display_mode++; //changes displaymode
+		display_mode = (display_mode+1)%2; //changes displaymode
 		update_display(); //updates display
 		return; //exits function
 	}
 	if (set_time == 1) {
 		//selects according to row
-		if (chosen_row%3 == 0) {
+		if (chosen_row == 0) {
 			hours++;
 		}
-		if (chosen_row%3 == 1) {
+		if (chosen_row == 1) {
 			minutes++;
 		}
-		if (chosen_row%3 == 2) {
+		if (chosen_row == 2) {
 			seconds++;
 		}
 		update_display(); //sets LEDs
@@ -198,7 +198,7 @@ ISR(INT1_vect) {
 		return; //exits
 	}
 	if (set_time == 1) {
-		chosen_row++; //changes selected row
+		chosen_row = (chosen_row+1)%3; //changes selected row
 		update_display(); //updates LEDs
 		return; //exits
 	}
