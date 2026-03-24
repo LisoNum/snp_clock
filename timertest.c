@@ -310,7 +310,7 @@ ISR(USART_RX_vect) {
     
     uint8_t c = UDR0; //reads input
 
-    if (c == '\n' || idx >= 11) {
+    if (c == '\r' || idx >= 11) {
         buf[idx] = '\0';
         parse_time_command(buf);
         idx = 0;
