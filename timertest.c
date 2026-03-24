@@ -280,6 +280,7 @@ void enter_sleep_mode() {
 
 void usartSetup(void) {
     
+	UCSR0A = (1 << U2X0); //enables double speed mode
     UBRR0H = (uint8_t)(UBRR_VAL >> 8); //set rate
     UBRR0L = (uint8_t)(UBRR_VAL);
 
