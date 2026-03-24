@@ -14,9 +14,10 @@ volatile uint8_t set_time = 0; //0 for normal operation, 1 for blinking mode
 volatile uint8_t chosen_row = 0; //0 for hours, 1 for minutes, 2 for seconds
 volatile uint8_t pwm_values[] = {0, 100, 255}; //levels for brightness
 volatile uint8_t pwm_level = 0; //will be devided by %3
+volatile int time_cal = 0; //increses every second
 
 //random values
-volatile uint8_t hours = 11;
+volatile uint8_t hours = 1;
 volatile uint8_t minutes = 38;
 volatile uint8_t seconds = 27; 
 
@@ -35,6 +36,7 @@ void usartSetup(void);
 void parse_time_command(uint8_t*);
 void usart_send_byte(uint8_t);
 void usart_send_time(void);
+uint8_t flip_bits(uint8_t);
 
 int main(void){
 
@@ -91,8 +93,8 @@ void update_display() {
 void normal_display_operation() {
 
 	//hours
-	PORTD = (PORTD & ~0xE0) | (0xE0 & (hours<<3)); //PD7, PD6, PD5
-	PORTB = (PORTB & ~0x05) | (0x01 & hours) | (0x04 & (hours<<1));
+	PORTD = (PORTD & ~0xE0) | (0xE0 & flip_bits(hours<<3)); //PD7, PD6, PD5
+	PORTB = (PORTB & ~0x05) | (0x01 & (hours>>1)) | (0x04 & (hours<<2));
 
 	if (display_mode == 0) {
 		PORTC = (PORTC & ~0x3F) | (0x3F & minutes);
@@ -106,8 +108,8 @@ void normal_display_operation() {
 void setting_time_LEDs() {
 	
 	//bit mask for the diffrent Ports for easier access
-	uint8_t bitMask_hoursD = (PORTD & ~0xE0)|(0xE0 & (hours<<3)); 
-	uint8_t bitMask_hoursB = (PORTB & ~0x05) | (0x01 & hours) | (0x04 & (hours<<1));
+	uint8_t bitMask_hoursD = (PORTD & ~0xE0)|flip_bits(0xE0 & (hours<<3)); 
+	uint8_t bitMask_hoursB = (PORTB & ~0x05) | (0x01 & (hours>>1)) | (0x04 & (hours<<2));
 	uint8_t bitMask_minutes = (PORTC & ~0x3F) | (0x3F & minutes);
 	uint8_t bitMask_seconds = (PORTC &  ~0x3F) | (0x3f & seconds);
 
@@ -165,7 +167,7 @@ void calibrate_time() {
 
 //change displayed row or increase time
 ISR(INT0_vect) {
-	_delay_ms(5); //wait for the bounce
+	_delay_ms(20); //wait for the bounce
 	if (set_time == 0) {
 		display_mode = (display_mode+1)%2; //changes displaymode
 		update_display(); //updates display
@@ -182,13 +184,14 @@ ISR(INT0_vect) {
 		if (chosen_row == 2) {
 			seconds++;
 		}
-		update_display(); //sets LEDs
-		return; //exits
+		update_display();
 	}
 }
 
 ISR(INT1_vect) {
+
 	_delay_ms(5); //wait for the bounce
+
 	if (set_time == 0) {
 		set_time = 1; //changes mode
 		chosen_row = 0; //resets chosen blinking row to hours
@@ -199,7 +202,6 @@ ISR(INT1_vect) {
 	if (set_time == 1) {
 		chosen_row = (chosen_row+1)%3; //changes selected row
 		update_display(); //updates LEDs
-		return; //exits
 	}
 }
 
@@ -229,6 +231,18 @@ ISR(TIMER2_OVF_vect) {
 		return; //exits without changing time
 	}
 	seconds++;
+	time_cal++;
+
+	//for time calibrating
+	/*
+	PORTD |= (1<<PD6);
+	_delay_ms(20);
+	PORTD &= ~(1<<PD6);
+	*/
+	if (time_cal == 14388) {
+		seconds--;
+		time_cal = 0;
+	}
 	update_display(); //just to be sure
 }
 
@@ -280,8 +294,10 @@ void enter_sleep_mode() {
 void usartSetup(void) {
     
     UCSR0A = (1 << U2X0); //enables double speed mode
-    UBRR0H = (uint8_t)(UBRR_VAL >> 8); //set rate
+    // set "Baudrate"
+	UBRR0H = (uint8_t)(UBRR_VAL >> 8);
     UBRR0L = (uint8_t)(UBRR_VAL);
+	
 
     UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0); //activate receiver/transmitter and aktivate rx interrupt
 
@@ -350,5 +366,16 @@ void usart_send_time(void) {
     usart_send_byte(':');
     send_two_digits(seconds);
     usart_send_byte('\n');
+}
+
+//flips first msb 3 bits
+uint8_t flip_bits(uint8_t x) {
+    uint8_t result = 0;
+
+    result |= (x & 0x80) >> 2; 
+    result |= (x & 0x40);      
+    result |= (x & 0x20) << 2; 
+
+    return result;
 }
 
