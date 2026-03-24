@@ -106,8 +106,8 @@ void normal_display_operation() {
 void setting_time_LEDs() {
 	
 	//bit mask for the diffrent Ports for easier access
-	uint8_t bitMask_hoursD = (0xE0 & (hours<<3)); 
-	uint8_t bitMask_hoursB = (0x01 & hours) | (0x04 & (hours<<1));
+	uint8_t bitMask_hoursD = (PORTD & ~0xE0)|(0xE0 & (hours<<3)); 
+	uint8_t bitMask_hoursB = (PORTB & ~0x05) | (0x01 & hours) | (0x04 & (hours<<1));
 	uint8_t bitMask_minutes = (PORTC & ~0x3F) | (0x3F & minutes);
 	uint8_t bitMask_seconds = (PORTC &  ~0x3F) | (0x3f & seconds);
 
@@ -149,18 +149,17 @@ void setting_time_LEDs() {
 
 void calibrate_time() {
 	
+	//checks each unit since they can be changes manually 
 	if (seconds >= 60) {
 		minutes++;
 		seconds = 0;
-
-		if (minutes >= 60) {
-			hours++;
-			minutes = 0;
-
-			if (hours >= 24) {
-				hours = 0;
-			}
-		}
+	}
+	if (minutes >= 60) {
+		hours++;
+		minutes = 0;
+	}
+	if (hours >= 24) {
+		hours = 0;
 	}
 }
 
@@ -280,7 +279,7 @@ void enter_sleep_mode() {
 
 void usartSetup(void) {
     
-	UCSR0A = (1 << U2X0); //enables double speed mode
+    UCSR0A = (1 << U2X0); //enables double speed mode
     UBRR0H = (uint8_t)(UBRR_VAL >> 8); //set rate
     UBRR0L = (uint8_t)(UBRR_VAL);
 
